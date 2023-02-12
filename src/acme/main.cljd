@@ -1,7 +1,7 @@
 (ns acme.main
     (:require
       ["package:flutter/material.dart" :as m]
-      ["package:table_calendar/table_calendar.dart" :as c]
+      ["package:calendar_view/calendar_view.dart" :as c]
       ["package:intl/intl.dart" :as i]
       [cljd.flutter :as f]))
 
@@ -14,53 +14,71 @@
 ; find timeslot for a bit of kit
 ;
 
+
+(defn make-event [[date title description event color startTime endTime endDate]]
+      (c/CalendarEventData .date date .title title))
+
 (defonce app-state (atom {:kit ["any" "fanatic" "gong" "levitaz" "axis 1150" "axis 980" "windfoil"]
                           :selected-kit "any"
                           :selected-day (DateTime.now)
-                          :booked nil}))
+                          :booked nil
+                          :events (mapv make-event [[(DateTime.now) "shop"] [(.add (DateTime.now) (Duration .days 1)) "sleep"]])}))
+
+; CalendarEventData({required String title, String description = "", T? event,
+; Color color = Colors.blue, DateTime? startTime, DateTime? endTime, DateTime? endDate, required DateTime date})
 
 (defn main []
       (f/run
+        ;:managed [cc (c/CalendarControllerProvider .controller c/EventController)]
+        :context ctx
+        :watch [{:keys [events]} app-state]
+        :managed [ec (c/EventController)]
+        (c/CalendarControllerProvider .controller ec)
         m/MaterialApp
         .home
-        (m/Scaffold .appBar (m/AppBar .title (m/Text "Wing-a-majig")))
+        m/Scaffold
         .body
-        (m/Column
-          .children
-          [(m/Row
-             .mainAxisAlignment m/MainAxisAlignment.center
-             .children
-             [(m/Text "Selected foil: "
-                      .style (m/TextStyle
-                               .color m.Colors/red
-                               .fontSize 22.0))
+        (c/DayView)
+        ))
 
-              (f/widget
-                :watch [{:keys [kit selected-kit]} app-state]
-                (m/DropdownButton
-                  .value selected-kit
-                  .onChanged (fn [v]
-                                 (swap! app-state assoc :selected-kit v))
-                  .items (into [] (map #(m/DropdownMenuItem .value % .child (m/Text %))) kit)))
-
-              (f/widget
-                :watch [{:keys [selected-day]} app-state]
-                :let [df (i/DateFormat "yyyy-MM-dd")]
-                (m/Text (str "Selected day: " (.format df selected-day))
-                        .style (m/TextStyle
-                                 .color m.Colors/blue
-                                 .fontSize 22.0)))])
-
-           (f/widget
-             :watch [{:keys [selected-day]} app-state]
-             (c/TableCalendar
-             .firstDay (DateTime.now)
-             .lastDay (.add (DateTime.now) (Duration .days 7))
-             .focusedDay selected-day
-             .selectedDayPredicate (fn [day] (= day selected-day))
-             .onDaySelected (fn [selectedDay focusedDay]
-                                (println selectedDay, focusedDay)
-                                (swap! app-state assoc :selected-day selectedDay))))])))
+        ;(m/Scaffold .appBar (m/AppBar .title (m/Text "Wing-a-majig")))
+        ;.body
+        ;(m/Column
+        ;  .children
+        ;  [(m/Row
+        ;     .mainAxisAlignment m/MainAxisAlignment.center
+        ;     .children
+        ;     [(m/Text "Selected foil: "
+        ;              .style (m/TextStyle
+        ;                       .color m.Colors/red
+        ;                       .fontSize 22.0))
+        ;
+        ;      (f/widget
+        ;        :watch [{:keys [kit selected-kit]} app-state]
+        ;        (m/DropdownButton
+        ;          .value selected-kit
+        ;          .onChanged (fn [v]
+        ;                         (swap! app-state assoc :selected-kit v))
+        ;          .items (into [] (map #(m/DropdownMenuItem .value % .child (m/Text %))) kit)))
+        ;
+        ;      (f/widget
+        ;        :watch [{:keys [selected-day]} app-state]
+        ;        :let [df (i/DateFormat "yyyy-MM-dd")]
+        ;        (m/Text (str "Selected day: " (.format df selected-day))
+        ;                .style (m/TextStyle
+        ;                         .color m.Colors/blue
+        ;                         .fontSize 22.0)))])
+        ;
+        ;   (f/widget
+        ;     :watch [{:keys [selected-day]} app-state]
+        ;     (c/TableCalendar
+        ;     .firstDay (DateTime.now)
+        ;     .lastDay (.add (DateTime.now) (Duration .days 7))
+        ;     .focusedDay selected-day
+        ;     .selectedDayPredicate (fn [day] (= day selected-day))
+        ;     .onDaySelected (fn [selectedDay focusedDay]
+        ;                        (println selectedDay, focusedDay)
+        ;                        (swap! app-state assoc :selected-day selectedDay))))])))
 
 ;final DateFormat formatter = DateFormat('yyyy-MM-dd');
 ;  final String formatted = formatter.format(now);
